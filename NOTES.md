@@ -2,15 +2,14 @@
 
 What the game actually does with an animal, what was built for it and how, so the next stage -
 wiring the XML and testing in game - does not have to rediscover it. Player-facing text is in
-[README.md](README.md); the asset facts that predate the build are in [BRIEF.md](BRIEF.md). Every
-game fact below was read out of the shipped game (`tools\dump-cecil.ps1 -IL`, `tools\scan-cecil.ps1`,
+[README.md](README.md). Every game fact below was read out of the shipped game (`tools\dump-cecil.ps1 -IL`, `tools\scan-cecil.ps1`,
 `mods\Werewolf\tools\find-stfld.ps1`, the ripped `animals.bundle`), not assumed.
 
 ## Where it stands
 
 | step | state |
 |------|-------|
-| 1. asset inspected | done - see BRIEF.md; corrections below ("What the brief got wrong") |
+| 1. asset inspected | done; corrections below ("What the brief got wrong") |
 | 2. rig prepared in Blender | done - six bones renamed, six FBXs re-exported, `art\export\` |
 | 3. textures converted | done - `art\textures\`, 2048, packed for Unity's Standard (Specular) shader |
 | 4. Unity project | done - `unity\Assets\Editor\*.cs`; builds headlessly |

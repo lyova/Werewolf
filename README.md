@@ -124,7 +124,7 @@ its AI is actually doing.
 
 - [NOTES.md](NOTES.md) — how it's built and why: the rig, the bundle, the animator, the XML, and
   the game internals each decision rests on.
-- [CHANGELOG.md](CHANGELOG.md), [BRIEF.md](BRIEF.md).
+- [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and license
 
