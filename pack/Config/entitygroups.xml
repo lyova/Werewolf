@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One group per colour, because a group is how spawning.xml picks what appears and the colours
+     are picked by biome. Their own groups, so no vanilla animal becomes rarer for the werewolf
+     being added.
+
+     THE "none" ENTRY IS NOT PADDING. Probabilities are a share of the group's own total, so a group
+     holding only the werewolf makes every single spawn attempt a werewolf. The first test produced
+     five of them around one player in a night.
+
+     2 against 98 is one attempt in fifty. It started at 5 in twenty - about the share the zombie
+     bear has of the wasteland group it rides in - and that still read as too often in play, which
+     is fair: a zombie bear is scenery in the wasteland and this is supposed to be an event. The
+     other half of the reduction is the respawn delay in spawning.xml.
+
+     That is the soft half of the limit and it only controls how often the spawner TRIES. The hard
+     half is in the DLL: WerewolfSpawnGate.AmbientLimit holds the biome spawner to one werewolf
+     alive world-wide, whatever the dice do and whatever colour it is, because spawning.xml's own
+     maxcount is per 80x80 m spawn area and a standing player has several of those live at once. -->
+<configs>
+
+    <append xpath="/entitygroups">
+
+        <!-- Forest, burnt forest and wasteland. -->
+        <entitygroup name="WerewolfNight">
+            <entity name="animalWerewolf" prob="2"/>
+            <entity name="none" prob="98"/>
+        </entitygroup>
+
+        <!-- Snow. -->
+        <entitygroup name="WerewolfNightSnow">
+            <entity name="animalWerewolfIce" prob="2"/>
+            <entity name="none" prob="98"/>
+        </entitygroup>
+
+        <!-- Desert. -->
+        <entitygroup name="WerewolfNightDesert">
+            <entity name="animalWerewolfBrown" prob="2"/>
+            <entity name="none" prob="98"/>
+        </entitygroup>
+
+    </append>
+
+</configs>

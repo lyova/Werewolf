@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xml>
+    <Name value="Werewolf" />
+    <DisplayName value="Werewolf" />
+    <Description value="Beware the night. A werewolf hunts from 22:00 to 04:00 - fast, furious, hits like a zombie bear, breaks walls, tears zombies apart, and howls for backup. Gated behind game stage 125. Model licensed from Fab." />
+    <Author value="Lyova" />
+    <Version value="0.1.0" />
+    <Website value="" />
+    <!-- The creature itself needs no DLL - an animal carries its animator controller inside its
+         prefab and the material is Unity's own Standard shader. Werewolf.dll is a TUNING TOOL: it
+         adds the 'werewolf' console command for changing speed and tracing why the AI swerves,
+         and nothing about the creature depends on it. But a mod carrying a DLL has to be skipped
+         under anti-cheat, so the game must be launched without EAC (7DaysToDie.exe).
+         Drop src\ and set this back to false to ship the creature on its own. -->
+    <SkipWithAntiCheat value="true" />
+</xml>

@@ -1,0 +1,50 @@
+This mod is made of two parts under two different licences. Read both.
+
+
+=== 1. The mod's own code and configuration — MIT ===
+
+Applies to everything in this mod EXCEPT the files listed in section 2: the XML in
+Config/, the C# in src/, the build scripts, and the documentation.
+
+MIT License
+
+Copyright (c) 2026 Lyova
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+=== 2. Third-party art assets — NOT MIT, and NOT redistributable ===
+
+The asset bundle in Resources/ contains 3D art licensed from a third party through
+Epic's Fab marketplace under the Fab Standard License. The MIT licence above does
+NOT apply to it and grants you no rights to it whatsoever.
+
+That art is included here only as an inseparable part of this mod, in compiled
+form. You may use it as part of this mod. You may NOT:
+
+  - extract, unpack or otherwise remove the art from the bundle;
+  - use it in any other project, mod or product;
+  - redistribute it on its own, whether for a fee or free of charge.
+
+These terms come from the Fab Standard License, which permits distributing a project
+with licensed content incorporated into it while requiring that end users be
+restricted from extracting or otherwise using that content outside the project.
+
+If you want to reuse this mod's code, take Config/ and src/ under the MIT licence
+above and supply your own art.

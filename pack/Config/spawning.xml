@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Where the werewolf comes from: EVERY biome, one entry each, and which COLOUR appears is decided
+     here by pointing each biome at a different group. It is not a creature of one region - it is a
+     thing that happens at night, wherever you are - but it wears the region.
+
+       snow                                  animalWerewolfIce     the snow pelt, brightened
+       desert                                animalWerewolfBrown
+       pine forest, burnt forest, wasteland  animalWerewolf        the dark one
+
+     One entry per biome is how this file works; there is no "all biomes" element, and the five
+     blocks below are the whole of it. All three colours are the same creature - same stats, same
+     AI, same howl - and the DLL treats them as one for its limits.
+
+     ON THE NUMBERS
+     maxcount 1 - at most one alive per 80x80 m spawn area at a time. It calls its own reinforcements
+     (see WerewolfHowl.cs), so the spawner does not need to provide more than one.
+
+     respawndelay is vanilla's own wasteland enemy-animal figure, untouched. It is NOT the knob for
+     making the creature rarer, and using it as one was a mistake worth recording.
+
+     The unit is game days - vanilla's own header says "game days - .000278 real seconds, .0167
+     mins", which is just 1 real second and 1 real minute expressed in days at the default
+     60-minute day. But the delay is counted PER SPAWN AREA, one 5x5-chunk 80x80 m block, each with
+     its own timer in ChunkAreaBiomeSpawnData. It only bites on a player who stays put. A player
+     running crosses fresh areas whose timers were never started, so they spawn at once - which is
+     why five turned up in five minutes of running with the delay at three days, and why raising it
+     to eight changed nothing about that.
+
+     Rarity therefore lives entirely in the entity group's probability (2 in 100, entitygroups.xml)
+     and in the hard world-wide cap of one at a time (WerewolfSpawnGate.AmbientLimit). Both of
+     those are indifferent to whether the player is moving.
+
+     TIME AND PROGRESSION ARE NOT GATED HERE, and cannot be:
+
+       * time is "Any" because this file only understands Day / Night / Any, and its Night is dusk
+         to dawn (22:00-04:00 at the default 18-hour daylight), not the 21:00-05:00 wanted.
+       * game stage has NO representation in biome spawning at all. SpawnManagerBiomes.SpawnUpdate
+         consults exactly two things, World.IsDaytime() and the game difficulty setting - there is
+         no game stage check anywhere in that path. Vanilla gates its dangerous ambient spawns by
+         PLACE instead: the demolisher rides in ZombiesDowntown at 2% and needs a downtown POI, and
+         the zombie bear needs the wasteland. Game stage only ever appears on the horde side, in
+         gamestages.xml.
+
+     Both are therefore enforced in the DLL, in WerewolfSpawnGate.cs, which turns away any werewolf
+     ARRIVING outside the 22:00-03:00 window or below world game stage 125 - about day 50, just
+     under the 147 at which vanilla first lets a demolisher into a blood moon. One already in the
+     world is left alone and keeps hunting past 03:00. The cost of "Any" here is that a daytime or
+     too-early spawn is created and removed again a second later, out of sight; only the biome the
+     players are standing in ever spawns, so that is a handful of wasted entities per in-game day
+     and nothing visible. -->
+<configs>
+
+    <append xpath="/spawning/biome[@name='pine_forest']">
+        <spawn id="ww01" maxcount="1" respawndelay="0.9,1.575,1.215,0.9,0.585,0.315" time="Any" entitygroup="WerewolfNight" type="animal"/>
+    </append>
+
+    <append xpath="/spawning/biome[@name='burnt_forest']">
+        <spawn id="ww01" maxcount="1" respawndelay="0.9,1.575,1.215,0.9,0.585,0.315" time="Any" entitygroup="WerewolfNight" type="animal"/>
+    </append>
+
+    <append xpath="/spawning/biome[@name='desert']">
+        <spawn id="ww01" maxcount="1" respawndelay="0.9,1.575,1.215,0.9,0.585,0.315" time="Any" entitygroup="WerewolfNightDesert" type="animal"/>
+    </append>
+
+    <append xpath="/spawning/biome[@name='snow']">
+        <spawn id="ww01" maxcount="1" respawndelay="0.9,1.575,1.215,0.9,0.585,0.315" time="Any" entitygroup="WerewolfNightSnow" type="animal"/>
+    </append>
+
+    <append xpath="/spawning/biome[@name='wasteland']">
+        <spawn id="ww01" maxcount="1" respawndelay="0.9,1.575,1.215,0.9,0.585,0.315" time="Any" entitygroup="WerewolfNight" type="animal"/>
+    </append>
+
+</configs>

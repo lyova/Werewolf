@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The werewolf's own voice. The clips live in the mod's asset bundle, so every ClipName is a
+     bundle path:
+
+       #@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert1
+
+     The leading '#' is what tells DataLoader.ParseDataPathIdentifier "bundle, then ?assetname".
+     Without it the string is read as an Addressable, and there is NO loose-file case at all - an
+     mp3 sitting in the mod folder would simply never load.
+
+     The names after the '?' are assigned by tools\build-asset-bundle.ps1 -Prefab, which copies one
+     folder per role out of art\sound and renames the contents to ww_<role><n>, sorted by filename.
+     THE <AudioClip> LINES ARE WRITTEN BY tools\sync-sounds.py (build.ps1 runs it): add, remove or
+     replace files in a role folder and the next build.ps1 -Bundle lists them here and rebuilds the
+     bundle. Hand-edit everything else in a node, never the clip lines.
+
+     The AudioSource prefabs are vanilla and stay vanilla - they are Addressables loaded through the
+     same DataLoader, so pointing at TFP's costs nothing and redistributes nothing. Which one each
+     role takes, the Noise blocks, the priorities and the pitch spread are all copied from the DIRE
+     WOLF's nodes, because that is the creature this one replaces in the food chain and its noise
+     values are what the game's stealth and heat maps are already balanced around. AudioSource_
+     CreaturesLG and _PainLG are the "large creature" sources: they carry further than the ones a
+     dog or a coyote uses, which is right for something this size.
+
+     ROAM AND SENSE are separate nodes with their own clips (roam borrowed sense's until it had
+     some). They stay separate because the roles differ in more than the clips: roaming is a quiet
+     idle noise on the large-creature source with priority 6, sensing is a loud one on the alert
+     source with priority 4 and ten times the noise value, and collapsing them would make an idling
+     werewolf audible across the map.
+
+     THERE IS NO GIVE-UP NODE, on purpose - none was generated. entityclasses.xml therefore leaves
+     SoundGiveUp pointed at the dire wolf's, which is a real clip that exists; removing the property
+     instead would be worse, because the game would have nothing to play when it loses a target. -->
+<configs>
+
+    <append xpath="/Sounds">
+
+        <!-- Idle breathing and growls, every SoundRandomTime while it wanders. -->
+        <SoundDataNode name="werewolf_roam">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_CreaturesLG.prefab"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_roam1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_roam2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_roam3"/>
+            <Noise ID="1" noise="7" time="3" muffled_when_crouched="0.5"/>
+            <Channel name="Mouth"/>
+            <Priority name="6"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- On first noticing something, and every SoundAlertTime while hunting it. -->
+        <SoundDataNode name="werewolf_alert">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_CreatureSenseAlert.prefab"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert4"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert5"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_alert6"/>
+            <Noise ID="3" noise="30" time="3" muffled_when_crouched="0.65" heat_map_strength="0.05" heat_map_time="60"/>
+            <Channel name="Mouth"/>
+            <Priority name="3"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- Catching a scent: quieter than the alert, and the thing a player hears before they
+             know they are being hunted. -->
+        <SoundDataNode name="werewolf_sense">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_CreatureSenseAlert.prefab"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_sense1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_sense2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_sense3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_sense4"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_sense5"/>
+            <Noise ID="3" noise="30" time="3" muffled_when_crouched="0.65" heat_map_strength="0.05" heat_map_time="60"/>
+            <Channel name="Mouth"/>
+            <Priority name="4"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- Every swing. -->
+        <SoundDataNode name="werewolf_attack">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_CreaturesXLG.prefab"/> <!-- one step up from CreaturesLG: volume 0.9 instead of 0.6, same 40 m reach -->
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_attack1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_attack2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_attack3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_attack4"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_attack5"/>
+            <Noise ID="2" noise="11" time="3" muffled_when_crouched="0.5"/>
+            <Channel name="Mouth"/>
+            <Priority name="2"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- Taking a hit. -->
+        <SoundDataNode name="werewolf_pain">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_PainLG.prefab"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain4"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain5"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_pain6"/>
+            <Noise ID="2" noise="11" time="3" muffled_when_crouched="0.5"/>
+            <Channel name="Mouth"/>
+            <Priority name="1"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- Dying. Priority 0 and the loudest Noise of the set: vanilla wants a death heard, both
+             by the player and by the heat map. -->
+        <SoundDataNode name="werewolf_death">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_PainLG.prefab"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_death1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_death2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_death3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_death4"/>
+            <Noise ID="4" noise="60" time="2" heat_map_strength="0.2" heat_map_time="90"/>
+            <Channel name="Mouth"/>
+            <Priority name="0"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="0.9"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="10"/>
+            <MaxRepeatRate value="0.9"/>
+        </SoundDataNode>
+
+        <!-- The summon. No entity property points at this one - it is played from the DLL, by
+             WerewolfHowl.Summon, at the same moment the Howl animation state is triggered.
+
+             Louder than anything else the creature does and with the longest heat map trail of the
+             set, because the fiction is that it is calling across the map and the mechanics should
+             agree: a howl brings a second werewolf AND stirs up whatever else was listening.
+
+             Pitch is pinned at 1.0 - no spread. The other roles wobble to disguise a small clip
+             pool, but there are only two howls and they are long, so the wobble would be heard as
+             wobble rather than as variety. -->
+        <SoundDataNode name="werewolf_howl">
+            <AudioSource name="@:Sounds/Prefabs/AudioSource_Creatures100Meter.prefab"/> <!-- two steps up: volume 1.0 and 100 m reach, the vulture call prefab - a summon should carry -->
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_howl1"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_howl2"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_howl3"/>
+            <AudioClip ClipName="#@modfolder(Werewolf):Resources/werewolf.unity3d?ww_howl4"/>
+            <Noise ID="4" noise="80" time="4" heat_map_strength="0.25" heat_map_time="120"/>
+            <Channel name="Mouth"/>
+            <Priority name="0"/>
+            <maxVoicesPerEntity value="1"/>
+            <LowestPitch name="1.0"/>
+            <HighestPitch name="1.0"/>
+            <LocalCrouchVolumeScale value="1.0"/>
+            <CrouchNoiseScale value="0.5"/>
+            <NoiseScale value="1"/>
+            <MaxVoices value="4"/>
+            <MaxRepeatRate value="2.5"/>
+        </SoundDataNode>
+
+    </append>
+
+</configs>

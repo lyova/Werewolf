@@ -1,0 +1,7 @@
+Key,File,Type,UsedInMainMenu,NoTranslate,KeepLoaded,english,Context / Alternate Text,german,spanish,french,italian,japanese,koreana,polish,brazilian,russian,turkish,schinese,tchinese
+animalWerewolf,entityclasses,Entity,,,,Werewolf,,,,,,,,,,Оборотень,,,
+animalWerewolfIce,entityclasses,Entity,,,,Snow Werewolf,,,,,,,,,,Снежный оборотень,,,
+animalWerewolfBrown,entityclasses,Entity,,,,Desert Werewolf,,,,,,,,,,Пустынный оборотень,,,
+animalWerewolfT1,entityclasses,Entity,,,,Werewolf (test: speed),,,,,,,,,,Оборотень (тест: скорость),,,
+animalWerewolfT2,entityclasses,Entity,,,,Werewolf (test: AI),,,,,,,,,,Оборотень (тест: AI),,,
+animalWerewolfT3,entityclasses,Entity,,,,Werewolf (test: both),,,,,,,,,,Оборотень (тест: оба),,,

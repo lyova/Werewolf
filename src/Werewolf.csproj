@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything that matters - target framework, game references, the copy into pack\ and the
+       deploy into the game - lives in ..\Directory.Build.props, shared with the mods monorepo.
+       This file only has to exist and name the assembly, because the assembly name is what
+       ModInfo.xml's <Name> and the Mods\<folder> have to agree with. -->
+  <PropertyGroup>
+    <AssemblyName>Werewolf</AssemblyName>
+    <RootNamespace>Werewolf</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The werewolf. ONE entity for now, the near-black variant. The asset's other three colours are
+     converted and each has a material in the Unity project; which one ships is `ModelSetup.Variants`
+     in the Unity build and NOT this file - whichever colour is first there is always built as the
+     bundle asset named plain "Werewolf", so changing the colour never touches this XML. Adding a
+     second colour as a biome variant does add an entity_class here; see "Colours, and biome
+     variants" in NOTES.md.
+
+     The frame is still the dire wolf's - speeds, mass, XP, pain resist, loot - because those are
+     vanilla numbers known to work. What the owner has set apart from it, after seeing the creature
+     move in game: health 4500 (above a zombie bear's 4000), 65 damage to entities, 300 to blocks,
+     3.1 m of reach, 1.2 scale, 40 m sight, 7000 XP, a guaranteed loot bag, and speeds of about
+     1.8 m/s walking and 7 m/s charging - a stride past a bear. Block damage is the one with teeth.
+
+     On speeds, checked in EntityAlive.GetMoveSpeedAggro: for an ANIMAL the two numbers are not a
+     range the difficulty picks from, they are day and night. The first applies in daylight, the
+     second once World.IsDark() or a blood moon - and higher is faster in both.
+
+     What is NOT copied from the dire wolf, and why, is marked at each property. Everything else
+     comes from animalTemplateHostile the same way animalWolf and animalDireWolf get it.
+
+     The animal path: Prefab + PrefabCombined="true" loads the WHOLE entity prefab out of this
+     mod's bundle (EntityInstanceAssets -> LoadManager, which understands #@modfolder(...)), and
+     the animator controller ships inside that prefab. There is no DLL. -->
+<configs>
+
+    <append xpath="/entity_classes">
+
+        <entity_class name="animalWerewolf" extends="animalTemplateHostile">
+            <property name="UserSpawnType" value="Menu"/>
+
+            <!-- A living predator, not undead: it keeps animal,edible from the template, so it is
+                 harvestable for meat and the hunting perks apply. The dire wolf instead sets
+                 EntityFlags="animal,zombie" and adds zombie,zombieAnimal to its Tags, which is
+                 what puts it in blood-moon horde groups and turns its harvest into rotting flesh.
+                 Flip those two lines if the werewolf should count as undead. -->
+            <property name="Tags" value="entity,animal,hostile,wolf,werewolf,perkAT05,strong"/>
+            <property name="MapIcon" value="ui_game_symbol_tracking_wolf"/>
+            <property name="TrackerIcon" value="ui_game_symbol_tracking_wolf"/>
+
+            <!-- The controller that writes the animator parameters and reads the Attack / Death /
+                 Hit state tags. The prefab's animator controller was authored for exactly it. -->
+            <property name="AvatarController" value="AvatarAnimalController"/>
+            <property name="ModelType" value="Standard"/>
+
+            <property name="Prefab" value="#@modfolder(Werewolf):Resources/werewolf.unity3d?Werewolf"/>
+            <property name="PrefabCombined" value="true"/>
+
+            <!-- NOT the dire wolf's AWolf: that body's collider paths are the wolf's skeleton
+                 (Hips/LowerBack/Spine/...) and none of them resolve on this rig, which would mean
+                 every shot passing straight through. AWerewolf is in this mod's physicsbodies.xml. -->
+            <property name="PhysicsBody" value="AWerewolf"/>
+            <property name="Mass" value="180"/>
+
+            <!-- TRUE, matching every other creature in the game. This was false, on the reasoning
+                 that the 6.7 s death clip already ends lying down so a ragdoll would add nothing -
+                 and that reasoning was wrong, because it is not decoration. It is how the game
+                 hands a corpse over.
+
+                 AvatarAnimalController.LateUpdate watches for the death clip to finish:
+
+                     if (isInDeathAnim && tagHash == deathHash
+                         && normalizedTime >= 1 && !anim.IsInTransition(0)) {
+                         isInDeathAnim = false;
+                         if (entity.HasDeathAnim)
+                             emodel.DoRagdoll(DamageResponse.New(true), mode 0, 999999);
+                     }
+
+                 - and it makes that call whenever HasDeathAnim is set, ours included. Meanwhile
+                 EModelBase.OnDeath wraps its entire death handling in if (HasRagdoll()), so with
+                 this false the creature never enters that path at all. The body was left standing
+                 in the last frame of the clip: not harvestable, and not going away.
+
+                 Every vanilla creature pairs HasRagdoll true with HasDeathAnim true - wolf, dire
+                 wolf, bear, zombie bear, every zombie. Ours was the only one that did not, and the
+                 symptom was exactly what that predicts.
+
+                 RagdollOnDeathChance is deliberately NOT copied. The wolf's .5 makes half its
+                 deaths skip the animation and flop straight into a ragdoll; ours has a 6.7 s death
+                 clip worth watching, so it should always play and only then settle. -->
+            <property name="HasRagdoll" value="true"/>
+            <property name="HasDeathAnim" value="true"/>
+
+            <!-- TRUE, the same as every other entity in the game, all forty-odd of them.
+
+                 The displacement comes from the animation: Animator.deltaPosition ->
+                 AvatarRootMotion.OnAnimatorMove -> AvatarController.NotifyAnimatorMove ->
+                 EntityAlive.accumulatedRootMotion. While the creature is on the ground
+                 EntityAlive.MoveEntityHeaded then REPLACES motion with that accumulated value and
+                 DefaultMoveEntity skips Entity.Move entirely, so on flat ground the clip is the
+                 movement and nothing else contributes.
+
+                 The purchased clips are animated in place, so the travel is baked back onto the
+                 root bone first (tools/blender-bake-root-motion.py; the untouched originals stay
+                 under art/export/anim-inplace). Measured off the planted feet: the four-legged
+                 run depicts 6.10 m/s and the walk 1.75 m/s, which times SizeScale 1.2 is 7.3 and
+                 2.1 m/s on the ground.
+
+                 A first attempt at this failed - the model ran about two metres and snapped back
+                 once per clip cycle - and the cause was two settings in the bundle, both now
+                 fixed in unity/Assets/Editor/ModelSetup.cs. The Animator had applyRootMotion off,
+                 and Unity only calls OnAnimatorMove while it is on, so nothing ever reached the
+                 entity. And the Generic rig had no root node: that field is
+                 m_RootMotionBoneName, it has no public C# API, it was therefore never set, and
+                 with it empty Unity generates no root motion curves at all - so the baked travel
+                 stayed in the pose and walked the model away from an entity standing still. The
+                 build now sets both and fails if an imported clip carries no root motion. -->
+            <property name="RootMotion" value="true"/>
+
+            <!-- 1.2 on a model already 2.27 m tall and 2.43 m long, so it stands about 2.7 m -
+                 taller than a bear and half a metre over a dire wolf. SizeScale scales the whole
+                 entity transform, colliders included, so the hit boxes and the movement capsule
+                 grow with it and nothing has to be re-authored.
+
+                 1.1 was tried, to squeeze the capsule through a gap - physics height 1.90 -> 1.74,
+                 radius 0.42 -> 0.39. It did not help, and it costs speed: under RootMotion the clip
+                 carries the movement and the transform scale multiplies it, so the run fell from
+                 7.3 to 6.7 m/s for nothing. Reverted. Whatever turns the creature away from that
+                 gap is not its width. Keep ConsoleCmdWerewolf.SizeScale in step with this number or
+                 every figure the console prints is wrong. -->
+            <property name="SizeScale" value="1.2"/>
+
+            <!-- NO CrouchType, and this is a measured decision rather than an omission.
+                 zombieTemplateMale sets it to 1 and no vanilla animal does; setting it here was
+                 tried, to let the creature duck through low openings, and made things strictly
+                 worse.
+
+                 What it promised: EntityAlive.CrouchHeightFixedUpdate sphere-casts for a ceiling
+                 and eases physicsHeight down to fit, switching to the crawler gait below 70 per
+                 cent height. What actually happened, measured at the gap: crouchType 1, baseHeight
+                 1.90 (over the 1.3 the routine needs, so it was eligible and running), bend 0.00,
+                 walkType 0. The duck never engaged once. The probe only reaches about 1.9 m up,
+                 and at 1.90 tall this creature does not need to duck for a two-block opening
+                 anyway - so there was never a ceiling for it to find.
+
+                 What it cost: EntityMoveHelper.CheckWorldBlocked bails out early when crouchType
+                 is set - "it will duck under, so it is not blocked" - and BlockedFlags stopped
+                 being raised at all. Measured over 441 ticks: flags>0 in 0%, against 13-21% with
+                 this absent. EAIBreakBlock needs those flags, so block-breaking went from firing
+                 about an eighth of the time to never.
+
+                 All downside, no upside. Whatever turns this creature away from a gap, it is not
+                 height: at 1.90 tall and 0.84 wide it fits a two-block opening on both axes, and
+                 SizeScale 1.1 (1.74 tall, 0.77 wide) did not help either. -->
+
+            <!-- OFF, and this is the fix for the swerving. animalTemplateHostile sets it to 1,
+                 and EAIApproachAndAttackTarget then relocates the animal to a random angle of
+                 18-46 degrees around its target every 46 ticks whenever something else is
+                 attacking the same target - wolf-pack circling. On a single heavy predator it
+                 reads as "runs sideways past me and will not close in", and the trace showed it
+                 exactly: Strafe 0.35 with Forward 0.00, distance stuck at 2.3 m.
+                 Set it back to 1 if the werewolf should ever hunt in packs. -->
+            <property name="AIGroupCircle" value="0"/>
+
+            <!-- 600 deg/s, more than twice the 280 every vanilla animal inherits, and it is not a
+                 whim - it is what this creature's speed demands.
+
+                 A path is a voxel route: PathPoint holds integer coordinates, so a diagonal
+                 approach is a staircase of one-metre steps. Whether an animal can follow that
+                 staircase is turning circle against step size, and the turning circle is speed
+                 divided by turn rate:
+
+                   dire wolf   3.3 m/s at 280 deg/s -> 0.68 m   fits inside a 1 m step
+                   werewolf    9.8 m/s at 280 deg/s -> 2.01 m   cannot, so it overshoots every
+                                                                corner and swings back: the weave
+                   werewolf    9.8 m/s at 800 deg/s -> 0.70 m   same agility as the dire wolf
+
+                 Side by side in game the dire wolf ran straight and this one did not, on the same
+                 ground, which is what pointed here. There is one value and two speeds, so it is
+                 sized for the NIGHT one: by day the creature is then more agile than it strictly
+                 needs to be, which costs nothing, whereas the other way round it weaves after
+                 dark. Change this whenever MoveSpeedAggro changes - the number that matters is
+                 speed / turn rate, and it wants to stay near 0.7 m. 'werewolf speed' prints the
+                 turn rate that goes with whatever speed you set. -->
+            <property name="MaxTurnSpeed" value="800"/>
+
+            <!-- 25 m, down from 40. This is the CEILING on how far the creature can see anything,
+                 not the distance at which it notices you - EAISetNearestEntityAsTarget takes
+                 min(SightRange, the per-class cap in AITarget below), so whichever is smaller wins.
+
+                 What that means with the AITarget line below:
+                   players   20 m by sight AND 20 m by hearing - the pair is "EntityPlayer,20,20",
+                             and the FIRST number is hearing, which this ceiling does not touch.
+                             It was 28, so the ear was the longer sense and the one that decided
+                             when the creature turned; both are 20 now.
+                   zombies   8 m, a fixed cap that ignores this entirely
+                   stags     20 m, taking the ceiling because their entry is 0
+
+                 NONE OF THIS STOPS IT COMING FOR A GUNSHOT, and that is worth knowing before
+                 concluding the numbers did nothing. EAISetNearestEntityAsTarget.FindTarget runs the
+                 sight search first and then, separately, checks EntityAlive.noisePlayer - a player
+                 who made enough noise becomes the target with no distance test at all, only a
+                 volume one against sleeperNoiseToWake. Firing a rifle will still bring it from far
+                 outside any of these ranges, by design, the same way it does for every other
+                 hostile in the game. -->
+            <!-- HEAD AIMING OFF. animalTemplateHostile, which this inherits from, sets 50, and that
+                 is what turned the muzzle sideways whenever the creature had a target.
+
+                 EModelBase.LookAtUpdate runs every frame from LateUpdate and finishes with
+                 headTransform.rotation = Slerp(current, Quaternion.LookRotation(toTarget, up),
+                 blend). LookRotation aims a transform's +Z at the target. On this rig +Z is not
+                 the muzzle: sampling every clip in the editor puts the head bone's forward a
+                 steady 90 degrees off the body's, so the game aimed the bone correctly and the
+                 face ended up pointing past the player. Traced in game it sat 21 to 48 degrees off
+                 the authored pose, varying with the blend, and 38 to 70 degrees off the target -
+                 and went straight again the moment the creature lost interest, because the blend
+                 decays with no target.
+                 
+                 LookAtInit reads this property once: lookAtEnabled = LookAtAngle > 0. Zero
+                 disables the whole thing and the head simply plays as animated. That is not a
+                 workaround - vanilla does the same for every creature whose rig does not suit it:
+                 zombieSpider, animalSnake, animalInsectSwarm and animalBeeSwarm are all 0.
+
+                 The alternative is re-orienting the Head bone so +Z runs down the muzzle, which
+                 would let it track a player properly, but every animation curve on that bone would
+                 have to be compensated to match. Worth doing only if a tracking head is wanted for
+                 its own sake. -->
+            <property name="LookAtAngle" value="0"/>
+
+            <!-- Stand upright on slopes, the way a zombie does, instead of lying back along the
+                 ramp like a wolf.
+
+                 animalTemplateHostile sets RotateToGround true, and every four-legged animal
+                 inherits it - correct for a wolf or a bear, whose body should follow the ground it
+                 is standing on. Ours is bipedal, so the same setting leans the whole creature
+                 backwards on a ramp and it looks broken.
+
+                 It is not only cosmetic, which is why this is not filed as polish.
+                 Entity.updateTransform tilts the model to groundSurface.normal whenever the dot
+                 with world up is between 0.7 and 0.99 - and a ramp block sits at almost exactly
+                 0.707, barely inside the range, so it gets the full tilt. Entity.getHeadPosition
+                 then reads the real head bone through emodel.GetHeadPosition(), so the tilt drags
+                 the head backwards and down. Two things are measured from that head: the
+                 line-of-sight ray in CanEntityBeSeen, which is head to head and has to thread a
+                 one-block hole, and melee reach in both directions. A player standing at the hole
+                 could not land a hit while the creature could, purely because it was leaning away.
+
+                 EntityHuman does this the other way round, setting IsRotateToGroundFlat, which
+                 forces that dot to 1 and lands in the "> 0.99" case. Same result; a property is
+                 cheaper than a patch. -->
+            <property name="RotateToGround" value="false"/>
+
+            <property name="SightRange" value="20"/>
+            <property name="AISeeOffset" value="1.2"/><!-- eye height; ours stands taller than a dire wolf -->
+            <property name="AIPathCostScale" value=".15, .2"/>
+
+            <!-- The dire wolf's list, with EntityZombie added to both halves the way the GRIZZLY
+                 bear has it - the one vanilla animal that picks fights with the undead. The pair
+                 has to be edited together: ApproachAndAttackTarget is what makes it walk over and
+                 swing, SetNearestEntityAsTarget is what makes it notice in the first place, and
+                 with only one of them it either stares at zombies or charges things it never saw.
+
+                 EntityZombie is the humanoid undead. Zombie ANIMALS (zombie bear, zombie dog) are
+                 EntityEnemyAnimal, not EntityZombie, and they stay off this list on purpose:
+                 adding that class would also point the werewolf at dire wolves and at the ones it
+                 summons itself. They still take the x3 (see items.xml) if a fight starts, because
+                 that is keyed on the "zombie" tag rather than on the class.
+
+                 The trailing numbers on SetNearestEntityAsTarget are day and night sight in
+                 metres, 0 meaning "use SightRange" and a negative being a reduction. -->
+            <property name="AITask" value="
+            BreakBlock|
+            DestroyArea|
+            Territorial|
+            ApproachDistraction|
+            ApproachAndAttackTarget class=EntityPlayer,25,EntityBandit,20,EntityAnimalStag,30,EntityZombie,30|
+            ApproachSpot|
+            Look|
+            Wander|
+            "/>
+            <!-- SetNearestCorpseAsTarget is DELIBERATELY ABSENT, and that is the one departure
+                 from the dire wolf's list. It sat third here, copied over with the rest, and this
+                 is a PRIORITY list: a corpse outranked hunting the player.
+
+                 The symptom was a good one. A player standing two metres away, ignored, while the
+                 creature fixated on a dead boar eight metres off - the trace read "target animalBoar
+                 at 8.4 m" with the werewolf standing still in EAILook. Nothing was broken; it was
+                 going to eat, exactly as told.
+
+                 Correct for a dire wolf, which is an animal that scavenges. Wrong for this one,
+                 which exists to come after the player - and animalBear, the other heavy predator,
+                 carries no corpse task either, so dropping it is the vanilla-shaped choice rather
+                 than an invention.
+
+                 EntityZombie is ADDED to SetAsTargetIfHurt, which the dire wolf does not have.
+                 Without it a zombie could chew on the werewolf all day and be ignored, because
+                 retaliation only fires for classes named here. With it, the game turns the creature
+                 onto whatever zombie just hit it - and WerewolfBrawl then keeps it there until
+                 every zombie within three metres is dead, instead of letting it kill one and turn
+                 its back on the rest to chase a player standing somewhere it cannot reach.
+
+                 The rest is the dire wolf's list unchanged. EntityAnimalStag stays: the bear hunts
+                 deer too, and it is the LAST class in SetNearestEntityAsTarget, below the player. -->
+            <property name="AITarget" value="
+            SetAsTargetIfHurt class=EntityPlayer,EntityBandit,EntityEnemyAnimal,EntityZombie|
+            BlockingTargetTask|
+            SetNearestEntityAsTarget class=EntityPlayer,20,20,EntityBandit,0,-8,EntityAnimalStag,0,0,EntityZombie,0,-8|
+            "/>
+
+            <!-- The mod's own voice, generated for this creature. The nodes are in this mod's
+                 sounds.xml and the clips ride in the asset bundle.
+
+                 SoundGiveUp stays the dire wolf's, alone among these: no give-up clip was made.
+                 Leaving the property pointed at a real vanilla node is better than dropping it,
+                 which would leave the game with nothing to play when it loses a target.
+
+                 There is no property for the howl - nothing in the game knows about a summon.
+                 WerewolfHowl.Summon plays werewolf_howl itself, at the moment it triggers the
+                 animation. -->
+            <property name="SoundRandom" value="werewolf_roam"/>
+            <property name="SoundAlert" value="werewolf_alert"/>
+            <property name="SoundHurt" value="werewolf_pain"/>
+            <property name="SoundDeath" value="werewolf_death"/>
+            <property name="SoundAttack" value="werewolf_attack"/>
+            <property name="SoundSense" value="werewolf_sense"/>
+            <property name="SoundGiveUp" value="wolfdiregiveup"/><!-- no clip of our own -->
+            <property name="SoundStepType" value="animalpawstep"/>
+
+            <!-- Chasing speed: the first number by day, the second once it is dark or a blood
+                 moon is up. For an animal these are NOT a range the difficulty setting picks from
+                 the way a zombie's are - EntityAlive.GetMoveSpeedAggro takes the first in daylight
+                 and the second under World.IsDark().
+
+                 THESE ARE NOT METRES PER SECOND, and under RootMotion="true" they do not set the
+                 speed at all. They pick the gait, and the gait sets the speed. The chain, all of
+                 it read off the IL:
+
+                   SetMoveForwardWithModifiers   speedModifier = this number
+                   OnUpdateLive                  landMovementFactor = 0.1 * speedModifier
+                   MoveEntityHeaded              speedForward = moveDirection.z * factor * 2.5
+                   AvatarController              Forward = speedForward
+
+                 so Forward = 0.25 x this number when the creature is heading straight at its
+                 target, and the locomotion blend turns that into a gait:
+
+                   0.4  -> Forward 0.10   the walk clip alone    1.75 m/s x 1.2 scale =  2.1 m/s
+                   1.2  -> Forward 0.30   the run clip alone     6.10 m/s x 1.2 scale =  7.3 m/s
+                   2.4  -> Forward 0.60   the run at 1.8x       10.98 m/s x 1.2 scale = 13.2 m/s
+
+                 That third row is a sprint node added to the blend for exactly this - see
+                 WerewolfAnimator.cs. It is the same run clip a second time, played faster, and
+                 that is the only honest way past 7.3: root motion scales with the playback rate,
+                 and the legs cycle faster by the same factor, so the feet still match the ground.
+                 Without it the blend clamps at its last child and a bigger number here does
+                 nothing whatsoever.
+
+                 Values between two rows blend the two clips and blend their travel with them, so
+                 the speed is continuous the whole way up.
+
+                 DAY AND NIGHT. This is deliberate and it is the point of the pair: by day the
+                 werewolf runs at the pace its animation was drawn for, and once the sun is down
+                 it moves at 9.8 m/s, about a third faster, with the gait speeding up to match.
+                 A player who can back away from it in daylight cannot after dark.
+
+                 Change these and the thresholds in WerewolfAnimator.cs together. -->
+            <property name="MoveSpeed" value=".4"/><!-- Forward 0.1: the walk, 2.1 m/s -->
+            <property name="MoveSpeedAggro" value="1.2, 1.7"/><!-- day 7.3 m/s, night 9.8 m/s -->
+            <!-- NO JumpMaxDistance, so it takes the plain animal default - the same thing a bear
+                 gets. It carried the zombie's 2.8-3.9 before that, and before that the dire wolf's
+                 5-6, and both were wrong for the same reason.
+
+                 What the property really decides, from EntityMoveHelper.CalcIfUnreachablePos:
+
+                     jumpMax = jumpMaxDistance
+                     if (dy >= 0.5 + jumpMax*0.5) return
+                     jumpMax += 3.4
+                     if (dxz*dxz > jumpMax*jumpMax) return
+                     IsUnreachableSideJump = true
+
+                 - so the creature decides it can LEAP to its target from anywhere inside
+                 jumpMax + 3.4 metres. At 3.9 that is a 7.3 m circle, and inside it the answer to
+                 almost any obstacle is a jump rather than walking the path it already has. The
+                 trace showed exactly that at a gap: a six-node path never advancing a single node,
+                 moveToDist stuck at half a metre, and "jumping YES" over and over.
+
+                 It also poisons the block-breaking it was originally raised to encourage.
+                 EAIBreakBlock.CanExecute refuses outright while airborne, and EntityMoveHelper.
+                 StartJump ends with ClearBlocked(), which wipes the BlockedTime it waits 0.35 s
+                 for. A creature that jumps at obstacles can never break one.
+
+                 The test that settled it cost one console command. animalZombieBear - .88 wide
+                 against this creature's .84, and with no JumpMaxDistance of its own - walked
+                 through the same gap without breaking stride. Two theories died there: that the
+                 gap was too narrow (it is not, the bear is wider), and that turning was to blame
+                 (MaxTurnSpeed 280, the bear's own figure, changed nothing). -->
+
+
+            <!-- 1, the zombie's value. Note what it is NOT: it is not a cooldown between jumps.
+                 EntityAlive.UpdateJump uses it as the WIND-UP - the ticks between the jump being
+                 triggered and the launch ("if (jumpStateTicks < jumpDelay) return;"). Animals set
+                 .1 and snap straight up; zombies leave it at the default 1 and visibly gather
+                 themselves first. Both get multiplied by 20 into ticks.
+
+                 There is no cooldown anywhere. EntityMoveHelper.StartJump guards only on already
+                 jumping, being off the ground, and electrocution - land, and it can jump again the
+                 same tick. What decides how OFTEN it jumps is only how quickly the move helper
+                 decides it is blocked again, and the jump distance, which sets how high a
+                 target still counts as jumpable.
+
+                 And StartJump ends with ClearBlocked(), which wipes BlockedTime. EAIBreakBlock
+                 needs BlockedTime >= 0.35 before it will swing at anything, so a creature that
+                 jumps at the first hint of an obstacle resets that timer before it can ever
+                 mature. The hopping and the refusal to break blocks are one behaviour, not two. -->
+            <property name="JumpDelay" value="1"/>
+
+            <!-- Our own claws, in this mod's items.xml: 65 to entities, 300 to blocks, 3.1 m reach. -->
+            <property name="HandItem" value="meleeHandAnimalWerewolf"/>
+            <property name="Immunity" value="sickness;disease;wellness"/>
+            <property name="PainResistPerHit" value=".95"/>
+            <!-- 600, the bear's, NOT the 1000 this had - which is the zombie figure and was
+                 copied from the wrong place. Animals sit at 350 for the template, 450 for the dire
+                 wolf and 600 for both bears; this creature is bigger than a bear, so 600 is the
+                 top of the sensible range rather than an outlier.
+
+                 It is the corpse's own hit points, and harvesting is proportional: a butcher swing
+                 removes damage from the body and pays out that fraction of the drops below, and the
+                 body disappears when it reaches zero. At 1000 a swing was taking a few percent, so
+                 a full set of drops needed twenty hits and each one returned about one meat -
+                 which reads in play as "it gives nothing and the corpse will not go away".
+
+                 The body also lingers 300 seconds either way (TimeStayAfterDeath, inherited from
+                 animalTemplateHostile). That is ten times a zombie's 30 and it is deliberate on
+                 vanilla's part: an animal is something you walk over to and butcher, so it has to
+                 still be there when you arrive. -->
+            <property name="DeadBodyHitPoints" value="600"/>
+            <property name="ExperienceGain" value="10000"/>
+            <property name="LootDropEntityClass" value="EntityLootContainerBoss"/>
+            <property name="LootDropProb" value="1"/>
+
+            <!-- Harvest is a living animal's: meat and leather, not the dire wolf's rotting flesh. -->
+            <drop event="Harvest" name="foodRawMeat" count="0" tool_category="Butcher"/>
+            <drop event="Harvest" name="foodRawMeat" tag="butcherHarvest" count="35"/>
+            <drop event="Harvest" name="resourceLeather" tag="butcherHarvest" count="12"/>
+            <drop event="Harvest" name="resourceAnimalFat" tag="butcherHarvest" count="3"/>
+            <drop event="Harvest" name="resourceBone" tag="butcherHarvest" count="15"/>
+            <drop event="Harvest" name="resourceBone" tag="allToolsHarvest" count="5"/>
+
+            <effect_group name="Base Effects">
+                <passive_effect name="HealthMax" operation="base_set" value="4500"/>
+            </effect_group>
+
+            <property name="NavObject" value="twitch_spawn,twitch_spawn_other,animaltracking_direwolf,clear_sleeper"/>
+        </entity_class>
+
+
+        <!-- ==================================================================================
+             THE COLOUR VARIANTS.
+
+             Each is the same creature with a different pelt, and differs from animalWerewolf by ONE
+             property: which prefab it loads out of the bundle. Everything else - stats, AI, sounds,
+             loot, the howl, the night gate - is inherited, so tuning the main one tunes all three
+             and there is no second place to keep in step.
+
+             Which one turns up where is in spawning.xml, not here:
+               animalWerewolf        forest, burnt forest, wasteland
+               animalWerewolfIce     snow
+               animalWerewolfBrown   desert
+
+             The DLL treats all three as one creature: WerewolfWorld matches on the class name
+             starting with "animalWerewolf", so the game-stage gate, the 21:00-05:00 window, the
+             one-at-a-time ambient limit and the shared pack limit span the colours. A brown
+             werewolf that howls in the desert counts against the same allowance as a dark one in
+             the forest, which is what "at most three on you at once" is supposed to mean.
+
+             Spawn any of them by name:
+               se 0 animalWerewolf     se 0 animalWerewolfIce     se 0 animalWerewolfBrown
+             ================================================================================== -->
+
+        <entity_class name="animalWerewolfIce" extends="animalWerewolf">
+            <property name="Prefab" value="#@modfolder(Werewolf):Resources/werewolf.unity3d?WerewolfIce"/>
+        </entity_class>
+
+        <entity_class name="animalWerewolfBrown" extends="animalWerewolf">
+            <property name="Prefab" value="#@modfolder(Werewolf):Resources/werewolf.unity3d?WerewolfBrown"/>
+        </entity_class>
+
+        <!-- ==================================================================================
+             TEMPORARY DIAGNOSTIC CLASSES - delete this whole block once the chase looks right.
+
+             These were cut for the swerving chase, back when the creature ran on
+             RootMotion="false" and the cause was still unknown. It is known now and fixed: the
+             bundle was built with the Animator's applyRootMotion off and with no root node on the
+             Generic rig, so no root motion existed to run on and the entity was being pushed
+             along by the game's own integrator instead. See the RootMotion note above.
+
+             What is left of them is still worth one look, because they isolate the two things
+             that were changed away from vanilla besides the rig:
+
+               se 0 animalWerewolf        the real one:      Forward 0.30, the run clip, 7.3 m/s
+               se 0 animalWerewolfT1      dire wolf speed:   Forward 0.25, a walk/run blend, 5 m/s
+               se 0 animalWerewolfT2      the plainest chase there is, our speed
+               se 0 animalWerewolfT3      both
+
+             If the real one runs straight, delete the block. If it still weaves and T2 does not,
+             an AI task is the cause - Territorial is the suspect, because it pulls the animal
+             back toward its ChaseReturnLocation and at this speed the boundary is crossed several
+             times a second.
+             ================================================================================== -->
+
+        <entity_class name="animalWerewolfT1" extends="animalWerewolf">
+            <property name="UserSpawnType" value="Menu"/>
+            <!-- ONLY difference: the dire wolf's speed instead of ours. -->
+            <property name="MoveSpeed" value=".3"/>
+            <property name="MoveSpeedAggro" value="1, 1.1"/>
+        </entity_class>
+
+        <entity_class name="animalWerewolfT2" extends="animalWerewolf">
+            <property name="UserSpawnType" value="Menu"/>
+            <!-- ONLY difference: the plainest chase there is. Territorial, DestroyArea and
+                 ApproachDistraction are gone; Territorial is the suspect, because it makes the
+                 animal head back to its ChaseReturnLocation, and at our speed the boundary is
+                 crossed several times a second. -->
+            <property name="AITask" value="
+            BreakBlock|
+            ApproachAndAttackTarget class=EntityPlayer,25,EntityBandit,20|
+            Look|
+            Wander|
+            "/>
+        </entity_class>
+
+        <entity_class name="animalWerewolfT3" extends="animalWerewolfT2">
+            <property name="UserSpawnType" value="Menu"/>
+            <!-- Both changes at once. -->
+            <property name="MoveSpeed" value=".3"/>
+            <property name="MoveSpeedAggro" value="1, 1.1"/>
+        </entity_class>
+
+    </append>
+
+</configs>

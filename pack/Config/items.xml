@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The werewolf's claws. An entity_class carries no damage of its own - it names a HandItem, and
+     the numbers live here.
+
+     Extends the dire wolf's hand so the on-hit buff set comes along unchanged: broken arm, broken
+     leg, laceration, stun and heavy bleeding weighted as vanilla weights them, plus the infection
+     and abrasion counters. Only the four numbers the owner set are overridden. -->
+<configs>
+
+    <append xpath="/items">
+
+        <item name="meleeHandAnimalWerewolf">
+            <property name="Extends" value="meleeHandAnimalDireWolf"/>
+            <property name="CreativeMode" value="None"/>
+            <property class="Action0">
+                <!-- Delay is inherited at .8 s, the dire wolf's. Note that pairs a bear's reach
+                     with a wolf's swing rate: 3.1 m every .8 s, where the bear needs 1.5 s. -->
+                <property name="DamageEntity" value="65"/>
+
+                <!-- 300 against blocks. For scale, the zombie bear - the heaviest block breaker
+                     among the vanilla animals - does 80, and this creature's AI already carries
+                     BreakBlock and DestroyArea, so it will go through most base walls rather than
+                     around them. Deliberate; lower it here if that turns out too strong. -->
+                <property name="DamageBlock" value="300"/>
+
+                <!-- 1.8, and this one is MEASURED rather than borrowed. The dire wolf's 2.2 and
+                     the bear's 3.1 were both tried and both leave it swiping at air.
+
+                     Range is compared CENTRE TO CENTRE - EAIMeleeAttackTarget.InRange uses
+                     Entity.GetDistanceSq, which is plain position minus position with no regard for
+                     how big either body is - so how much of the number is usable depends entirely
+                     on the creature's shape. A bear is two metres of horizontal animal with its
+                     centre a metre behind the snout, so 3.1 leaves a sensible gap. This one rears
+                     up to swing: its centre sits almost directly under it and there is no body out
+                     in front to spend the distance on.
+
+                     What it actually reaches is the claw. Sampled off the attack clips
+                     (WerewolfPreview logs REACH forward), the hand peaks 1.15 m ahead of the
+                     model's origin at the top of the swing - 1.38 m once SizeScale 1.2 is applied -
+                     and the player's own capsule is about 0.4 m of radius. So 1.38 + 0.4 = 1.8 is
+                     where the claw and the player meet. At 2.6 it was stopping the better part of a
+                     metre short of anything it could hit.
+
+                     RAISED TO 2.2 - the dire wolf's figure - because 1.8 only covers the level
+                     case. The measurement above is a HORIZONTAL one, and the geometry stops being
+                     horizontal the moment the player steps up:
+
+                       1.5 m across the ground + 1.0 m of ledge  ->  1.80 m centre to centre
+
+                     which lands exactly on the old limit, so a player one block up was on the edge
+                     of being unreachable even with the claw pointed straight at them. 2.2 buys back
+                     that vertical component and nothing more; it is not a guess, it is what a
+                     vanilla creature of comparable build already uses.
+
+                     Block_range is a SEPARATE property and is untouched at 2.5, inherited from
+                     meleeHandMaster like every other creature in the game - which is why the
+                     numbers here say nothing about hitting through a wall. Damage stops at the
+                     first thing the ray meets either way. -->
+                <property name="Range" value="2.2"/>
+
+                <!-- .3, the bear's value, instead of the .1 every creature inherits from
+                     meleeHandMaster. This is the fix for "it will not land a hit on a ramp".
+
+                     Sphere is the radius of the melee probe, and the reason it matters so much
+                     here is where the probe comes from. ItemActionAttack.Hit uses
+                     EntityAlive.GetLookRay, which is:
+
+                         new Ray(position + (0, GetEyeHeight(), 0), GetLookVector())
+
+                     - so the origin is the entity POSITION raised by eye height, not the head bone,
+                     and the direction comes from Entity.rotation. An animal's pitch stays flat, so
+                     the probe is a horizontal line at a fixed height above its feet. On level
+                     ground that line runs through the player's chest and everything works; the
+                     trace caught a clean hit at 1.18 m with the head barely above chest height.
+                     Put both of them on a slope and the same horizontal line passes under the
+                     player, and a probe .1 wide has essentially no vertical forgiveness.
+
+                     meleeHandAnimalBear is the only vanilla creature that raises this, to .3, and
+                     it is the only vanilla creature of comparable bulk. Ours is taller still - 2.7
+                     m with SizeScale 1.2 - so it should never have been swinging with the default
+                     needle.
+
+                     Note this also retires an earlier theory. The model tilt on slopes was a real
+                     bug and RotateToGround="false" was the right fix for sight and for how it
+                     looks, but it was never what stopped the creature landing blows: the attack
+                     ray never touched the head bone in the first place. -->
+                <property name="Sphere" value=".3"/>
+            </property>
+
+            <!-- TRIPLE damage to anything tagged "zombie": 65 becomes 195 a swing. perc_add is a
+                 fraction added to 1, so 2 is x3.
+
+                 The requirement reads the target, not the werewolf. "other" is bound by the game
+                 during the hit itself (ItemActionAttack.Hit and EntityAlive.DamageEntity both set
+                 MinEventParams.Other), and that happens for any attacker, animals included - this
+                 is the same shape vanilla uses for the perk bonuses against bears and wolves.
+
+                 Tag, not class, so it covers the zombie ANIMALS too - the zombie bear, the zombie
+                 dog, the vulture - even though the AI in entityclasses.xml only hunts humanoid
+                 zombies by choice. If one of them starts the fight, the werewolf still hits it
+                 three times as hard. -->
+            <effect_group name="werewolfAntiZombie">
+                <passive_effect name="EntityDamage" operation="perc_add" value="2">
+                    <requirement name="EntityTagCompare" target="other" tags="zombie"/>
+                </passive_effect>
+            </effect_group>
+        </item>
+
+    </append>
+
+</configs>

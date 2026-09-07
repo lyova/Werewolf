@@ -1,0 +1,82 @@
+<Project>
+
+  <!-- Build settings for this mod. Sources live in src\, everything that ships in pack\.
+       Kept inside the mod folder so the mod builds on its own, outside the mods monorepo. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>portable</DebugType>
+
+    <!-- Adjust once here if the game lives somewhere else -->
+    <GameDir Condition="'$(GameDir)' == ''">D:\SteamLibrary\steamapps\common\7 Days To Die</GameDir>
+    <GameManagedDir>$(GameDir)\7DaysToDie_Data\Managed</GameManagedDir>
+
+    <!-- src\<Name>.csproj -> the mod folder -->
+    <ModRootDir>$(MSBuildProjectDirectory)\..\</ModRootDir>
+    <ModPackDir>$(ModRootDir)pack\</ModPackDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(GameManagedDir)\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManagedDir)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Animator and RuntimeAnimatorController live here, not in CoreModule -->
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(GameManagedDir)\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Rigidbody and the collider types: WerewolfBlocker removes the LargeEntityBlocker rigidbody
+         the game adds in Entity.PhysicsInit, and has to name the type to do it -->
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(GameManagedDir)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- DataLoader.LoadAsset has an overload taking an AssetReference, so the compiler needs this
+         assembly to resolve the overload set even though the mod never names the type -->
+    <Reference Include="Unity.Addressables">
+      <HintPath>$(GameManagedDir)\Unity.Addressables.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="LogLibrary">
+      <HintPath>$(GameManagedDir)\LogLibrary.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\Mods\0_TFP_Harmony\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Drop the built DLL into pack\ and deploy the whole mod folder to the game -->
+  <Target Name="DeployMod" AfterTargets="Build">
+    <!-- Resolved inside the target: AssemblyName is not known yet while props are imported -->
+    <PropertyGroup>
+      <GameModDir>$(GameDir)\Mods\$(AssemblyName)\</GameModDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModPackDir)" />
+    <ItemGroup>
+      <PackFiles Include="$(ModPackDir)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PackFiles)" DestinationFiles="@(PackFiles->'$(GameModDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Message Importance="high" Text="[$(AssemblyName)] deployed to $(GameModDir)" />
+  </Target>
+
+</Project>
