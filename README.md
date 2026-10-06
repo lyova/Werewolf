@@ -2,7 +2,7 @@
 
 **[Download on Nexus Mods](https://www.nexusmods.com/7daystodie/mods/12493)**
 
-A new apex predator for **7 Days to Die V 3.2.0**, built around
+A new apex predator for **7 Days to Die V 3.2 and V 3.3**, built around
 [this character asset from Fab](https://www.fab.com/listings/e6d3f2fc-f64d-418b-b41d-1f8808be3f21).
 
 ---
@@ -70,7 +70,7 @@ wander around at once, so you get to *meet* one rather than trip over a stream o
 
 ## Requirements
 
-- 7 Days to Die **V 3.2.0** (built and tested against it; should work on any 3.x).
+- 7 Days to Die **V 3.2 or V 3.3** - the same build runs on both.
 - Launch **without EasyAntiCheat** — the mod ships a DLL and EAC blocks those. (The creature itself
   doesn't need it; see below.)
 - Works on an existing save.
